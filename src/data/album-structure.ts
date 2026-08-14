@@ -176,7 +176,7 @@ export const SECTION_LABELS: Record<string, string> = {
 // Derive sticker section key from existing data
 export function getStickerSectionKey(countryCode: string, number: number): string {
   if (countryCode === 'WP') return 'COVER';
-  if (countryCode === 'CC') return 'CC';
+  if (countryCode.startsWith('CC')) return 'CC'; // Normalize CCv1, CCv2, etc. to 'CC'
   if (countryCode === 'FWC') {
     if (number <= 6) return 'TRN';
     return 'HOST';

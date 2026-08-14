@@ -17,7 +17,7 @@ const ROOT = join(__dirname, '..');
 const OUT  = join(ROOT, 'src/data/player-images.json');
 
 // Wikipedia requires a descriptive User-Agent to avoid aggressive rate limiting
-const UA = 'WC2026AlbumTracker/1.0 (https://github.com/poethy/world-cup-2026-tracker; bot)';
+const UA = 'WC2026AlbumTracker/1.0 (https://github.com/cal5barton/world-cup-2026-tracker; bot)';
 
 // ── Parse stickers.ts ────────────────────────────────────────────────────────
 const src   = readFileSync(join(ROOT, 'src/data/stickers.ts'), 'utf8');
