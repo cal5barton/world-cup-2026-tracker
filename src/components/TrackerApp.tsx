@@ -75,6 +75,13 @@ export default function TrackerApp() {
         if (countryCode === 'WP') displayCode = '00';
         else if (countryCode === 'CC') displayCode = `CC-${row.position_in_page}`;
         else displayCode = `${countryCode}-${idx}`;
+
+        const normalizedSectionType = String(row.section_type ?? 'regular');
+
+        // Extract ccVersion from country_code if it's a Coca-Cola variant (CCv1, CCv2, etc.)
+        const ccVersionMatch = countryCode.match(/^CC(v\d+)$/);
+        const ccVersion = ccVersionMatch ? ccVersionMatch[1] : undefined;
+
         return {
           number: row.number,
           name: row.name,
@@ -84,7 +91,7 @@ export default function TrackerApp() {
           positionInPage: row.position_in_page,
           sectionType: row.section_type,
           imageUrl: row.image_url ?? undefined,
-          ccVersion: row.cc_version ?? undefined,
+          ccVersion,
           displayCode,
         } as LoadedSticker;
       });
@@ -459,6 +466,7 @@ export default function TrackerApp() {
               <option value="COVER">Cover</option>
               <option value="TRN">Tournament</option>
               <option value="HOST">Host Nations</option>
+              <option value="CC">Coca-Cola</option>
               <optgroup label="Teams">
                 {COUNTRIES.map(c => (
                   <option key={c.code} value={c.code}>{c.name} ({c.code})</option>
