@@ -15,6 +15,8 @@ interface StickerCardProps {
   photoUrl?: string | null;
   onToggle: (id: number, owned: boolean) => void;
   onOpenDetail: (number: number) => void;
+  variant?: 'collection' | 'trade';
+  offerEmail?: string | null;
 }
 
 export default function StickerCard({
@@ -29,6 +31,8 @@ export default function StickerCard({
   photoUrl,
   onToggle,
   onOpenDetail,
+  variant = 'collection',
+  offerEmail,
 }: StickerCardProps) {
   const isSpecial = sectionType === 'special';
   const countryData: Country | undefined = COUNTRY_BY_CODE[countryCode];
@@ -36,6 +40,8 @@ export default function StickerCard({
   const cls = [
     'sticker',
     owned ? 'is-owned' : 'is-missing',
+    variant === 'trade' ? 'is-trade' : '',
+    variant === 'trade' && offerEmail ? 'has-offer' : '',
     isSpecial ? 'is-special' : '',
     photoUrl ? 'has-photo' : '',
   ].filter(Boolean).join(' ');
@@ -60,7 +66,7 @@ export default function StickerCard({
         className="sticker__main"
         onClick={() => onToggle(id, !owned)}
         aria-pressed={owned}
-        aria-label={`Sticker #${number} ${name} — ${owned ? 'owned' : 'missing'}, click to toggle`}
+        aria-label={`Sticker #${number} ${name} — ${owned ? 'you can bring this' : 'missing'}, click to ${owned ? 'withdraw' : 'offer'}`}
       >
         <div className="sticker__art">
           <div className="sticker__art-top">
@@ -112,7 +118,13 @@ export default function StickerCard({
 
         <div className="sticker__info">
           <span className="sticker__name">{name}</span>
-          <span className="sticker__country">{sectionLabel}</span>
+          <span className="sticker__country">
+            {variant === 'trade' && owned
+              ? 'You can bring this'
+              : variant === 'trade' && offerEmail
+                ? `Offered by ${offerEmail}`
+                : sectionLabel}
+          </span>
         </div>
       </button>
 

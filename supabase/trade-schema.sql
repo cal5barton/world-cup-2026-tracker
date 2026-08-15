@@ -238,6 +238,7 @@ AS $$
       t.creator_id = auth.uid()
       OR t.joined_user_id = auth.uid()
       OR request.id IS NOT NULL
+      OR (t.joined_user_id IS NULL AND t.creator_id <> auth.uid())
     );
 $$;
 
@@ -359,6 +360,8 @@ AS $$
       offering.email AS offering_email
     FROM participants p
     JOIN public.stickers s ON TRUE
+    LEFT JOIN public.user_profiles other_profile
+      ON other_profile.user_id = p.other_user_id
     LEFT JOIN public.user_stickers owned
       ON owned.sticker_id = s.id AND owned.user_id = p.other_user_id
     LEFT JOIN public.trade_offers o
@@ -366,6 +369,11 @@ AS $$
       AND o.sticker_id = s.id
     LEFT JOIN auth.users offering ON offering.id = o.offering_user_id
     WHERE owned.id IS NULL
+      AND (
+        s.country_code NOT LIKE 'CCv%'
+        OR s.country_code = 'CC'
+        OR s.country_code = 'CC' || other_profile.album_version
+      )
   )
   SELECT jsonb_build_object(
     'stickers', COALESCE((SELECT jsonb_agg(to_jsonb(missing) ORDER BY missing.number) FROM missing), '[]'::jsonb)

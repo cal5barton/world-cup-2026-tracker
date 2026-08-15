@@ -53,6 +53,7 @@ export const GET: APIRoute = async ({ request, params }) => {
     return jsonResponse({
       data: {
         status: access.request_status ?? 'available',
+        ...(access.creator_id === user.id ? { status: 'owner' } : {}),
         tradeId: access.trade_id,
         creatorEmail: access.creator_email,
         requestId: access.request_id,

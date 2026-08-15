@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from '../utils/supabase';
+import TradeAlbum from './TradeAlbum';
 
 type TradeSummary = {
   id: string;
@@ -29,7 +30,7 @@ type TradeSticker = {
 };
 
 type TradeResponse = {
-  status: 'available' | 'pending' | 'rejected' | 'approved';
+  status: 'available' | 'owner' | 'pending' | 'rejected' | 'approved';
   tradeId: string;
   creatorEmail: string;
   joinedUserEmail?: string | null;
@@ -40,7 +41,7 @@ type TradeResponse = {
 
 type Props = { token?: string };
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) {
     window.location.href = '/auth/login';
@@ -217,6 +218,31 @@ export default function TradeManager({ token }: Props) {
     );
   }
 
+  if (trade.status === 'owner') {
+    const pendingRequests = (trade.requests ?? []).filter((request) => request.status === 'pending');
+    return (
+      <main className="trade-manager trade-manager--narrow">
+        <p className="trade-kicker">Your invitation</p>
+        <h1>Waiting for a trading partner.</h1>
+        <p className="trade-lede">Share the link from your trade desk. Incoming requests will appear here for approval.</p>
+        <section className="trade-callout">
+          <div className="trade-section-heading"><p className="trade-kicker">Join requests</p><span>{pendingRequests.length}</span></div>
+          {pendingRequests.length === 0 ? (
+            <p className="trade-empty">No one has requested access yet.</p>
+          ) : pendingRequests.map((request) => (
+            <div className="trade-request" key={request.request_id}>
+              <strong>{request.requester_email}</strong>
+              <div className="trade-row__actions">
+                <button className="trade-button trade-button--quiet" disabled={busy} onClick={() => sendAction('reject', { requestId: request.request_id })}>Reject</button>
+                <button className="trade-button trade-button--primary" disabled={busy} onClick={() => sendAction('approve', { requestId: request.request_id })}>Approve</button>
+              </div>
+            </div>
+          ))}
+        </section>
+      </main>
+    );
+  }
+
   if (trade.status === 'pending' || trade.status === 'rejected') {
     return (
       <main className="trade-manager trade-manager--narrow">
@@ -262,11 +288,11 @@ export default function TradeManager({ token }: Props) {
         </section>
       )}
 
-      <section className="trade-callout trade-callout--muted">
-        <p className="trade-kicker">Next step</p>
-        <strong>Open the shared album to mark what you can bring.</strong>
-        <p className="trade-note">The album view is the next part of the trade flow. Offers are trusted claims, so bring only what you have set aside.</p>
-      </section>
+      <TradeAlbum
+        token={token}
+        trade={trade}
+        onRefresh={loadTrade}
+      />
     </main>
   );
 }
