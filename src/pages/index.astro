@@ -17,19 +17,24 @@ import { COUNTRIES, FIFA_TO_ISO } from '../data/album-structure';
           </div>
         </a>
 
-        <nav class="topbar__nav" id="logged-in-nav" style="display:none">
+        <nav class="topbar__nav home-nav" id="logged-in-nav">
           <a href="/" class="is-active">Overview</a>
           <a href="/tracker">Tracker</a>
+          <div class="topbar__nav-extra">
+            <div class="user-chip" id="user-chip" style="display:none">
+              <span class="user-chip__avatar" id="user-avatar">?</span>
+              <span class="user-chip__name" id="user-name">User</span>
+            </div>
+            <button class="btn btn--ghost" id="btn-logout" style="display:none">Sign out</button>
+          </div>
         </nav>
       </div>
 
       <div class="topbar__right">
-        <div class="user-chip" id="user-chip" style="display:none">
-          <span class="user-chip__avatar" id="user-avatar">?</span>
-          <span class="user-chip__name" id="user-name">User</span>
-        </div>
-        <button class="btn btn--ghost" id="btn-logout" style="display:none">Sign out</button>
         <a href="/auth/login" class="btn btn--primary" id="signin-btn">Sign in</a>
+        <button class="topbar__menu-btn home-nav-toggle" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" style="display:none">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </header>
 
@@ -189,7 +194,18 @@ import { COUNTRIES, FIFA_TO_ISO } from '../data/album-structure';
     if (userName) userName.textContent = name;
 
     const nav = document.getElementById('logged-in-nav');
-    if (nav) nav.style.display = 'flex';
+    if (nav) nav.classList.add('is-signed-in');
+
+    const navToggle = document.getElementById('nav-toggle');
+    if (navToggle) navToggle.style.display = '';
+    navToggle?.addEventListener('click', () => {
+      const isOpen = nav?.classList.toggle('is-open');
+      navToggle.setAttribute('aria-expanded', String(!!isOpen));
+    });
+    nav?.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => {
+      nav.classList.remove('is-open');
+      navToggle?.setAttribute('aria-expanded', 'false');
+    }));
 
     const signinBtn = document.getElementById('signin-btn');
     if (signinBtn) signinBtn.style.display = 'none';
