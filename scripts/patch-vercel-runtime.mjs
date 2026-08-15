@@ -3,7 +3,11 @@
  *
  * @astrojs/vercel v7 hardcodes nodejs18.x, which Vercel no longer accepts
  * (Node 18 reached EOL April 2025). This script patches the generated
- * .vc-config.json to use nodejs20.x after every build.
+ * .vc-config.json to use nodejs22.x after every build.
+ *
+ * Node 22 is used (not 20) because @supabase/supabase-js constructs a
+ * RealtimeClient internally even when realtime isn't used, and that throws
+ * on Node < 22 without native WebSocket support.
  *
  * Run automatically via the "postbuild" npm script.
  */
@@ -25,14 +29,15 @@ function patchDir(dir) {
       patchDir(full);
     } else if (entry === '.vc-config.json') {
       const raw = JSON.parse(readFileSync(full, 'utf8'));
-      if (raw.runtime === 'nodejs18.x') {
-        raw.runtime = 'nodejs20.x';
+      if (raw.runtime === 'nodejs18.x' || raw.runtime === 'nodejs20.x') {
+        const from = raw.runtime;
+        raw.runtime = 'nodejs22.x';
         writeFileSync(full, JSON.stringify(raw, null, 2));
-        console.log(`patched: ${full.replace(join(__dirname, '..'), '')}`);
+        console.log(`patched: ${full.replace(join(__dirname, '..'), '')} (${from} → nodejs22.x)`);
       }
     }
   }
 }
 
 patchDir(functionsDir);
-console.log('runtime patch done — nodejs18.x → nodejs20.x');
+console.log('runtime patch done — target: nodejs22.x');
