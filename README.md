@@ -64,6 +64,8 @@ npm install
 
 Open the SQL Editor in your Supabase project and run `supabase/schema.sql`. This creates the `user_stickers` table and the four RLS policies (SELECT, INSERT, UPDATE, DELETE).
 
+For trade sharing, run `supabase/trade-schema.sql` after the base schema. It creates the private two-person trade tables, offer tracking, and the RLS policies that keep collection data visible only to approved participants.
+
 No seed file needed — the full 980-sticker catalog lives in `src/data/stickers.ts` and is served statically at build time.
 
 ### 3. Set environment variables

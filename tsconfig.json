@@ -3,6 +3,7 @@
   "compilerOptions": {
     "jsxImportSource": "react",
     "moduleResolution": "bundler",
+    "baseUrl": ".",
     "lib": ["es2022", "dom", "dom.iterable"],
     "paths": {
       "@/*": ["src/*"]
