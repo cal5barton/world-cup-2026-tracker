@@ -16,6 +16,7 @@ import type { AlbumVersion } from './AlbumVersionPicker';
 type OwnedMap = Record<number, boolean>;
 
 interface LoadedSticker {
+  id: number;
   number: number;
   name: string;
   country: string;
@@ -83,6 +84,7 @@ export default function TrackerApp() {
         const ccVersion = ccVersionMatch ? ccVersionMatch[1] : undefined;
 
         return {
+          id: row.id,
           number: row.number,
           name: row.name,
           country: row.country,
@@ -148,10 +150,12 @@ export default function TrackerApp() {
     if (section) setCountryFilter(section);
   }, []);
 
-  const handleToggle = useCallback(async (number: number, newOwned: boolean) => {
-    if (toggling.has(number)) return;
-    setToggling(prev => new Set(prev).add(number));
-    setOwned(prev => ({ ...prev, [number]: newOwned }));
+  // `id` is the stickers table primary key — user_stickers.sticker_id references it,
+  // not the album 'number' (which is not the same for Coca-Cola stickers).
+  const handleToggle = useCallback(async (id: number, newOwned: boolean) => {
+    if (toggling.has(id)) return;
+    setToggling(prev => new Set(prev).add(id));
+    setOwned(prev => ({ ...prev, [id]: newOwned }));
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -161,7 +165,7 @@ export default function TrackerApp() {
         const { error } = await supabase
           .from('user_stickers')
           .upsert(
-            { user_id: session.user.id, sticker_id: number, status: 'have' },
+            { user_id: session.user.id, sticker_id: id, status: 'have' },
             { onConflict: 'user_id,sticker_id' }
           );
         if (error) throw error;
@@ -170,14 +174,14 @@ export default function TrackerApp() {
           .from('user_stickers')
           .delete()
           .eq('user_id', session.user.id)
-          .eq('sticker_id', number);
+          .eq('sticker_id', id);
         if (error) throw error;
       }
     } catch (e: any) {
       console.error('[TrackerApp] save error:', e?.message ?? e);
-      setOwned(prev => ({ ...prev, [number]: !newOwned }));
+      setOwned(prev => ({ ...prev, [id]: !newOwned }));
     } finally {
-      setToggling(prev => { const n = new Set(prev); n.delete(number); return n; });
+      setToggling(prev => { const n = new Set(prev); n.delete(id); return n; });
     }
   }, [toggling]);
 
@@ -199,7 +203,7 @@ export default function TrackerApp() {
       if (s.ccVersion && s.ccVersion !== albumVersion) continue;
       const isSpecial = s.sectionType === 'special';
       if (isSpecial) totalSpecial++;
-      const isOwned = !!owned[s.number];
+      const isOwned = !!owned[s.id];
       if (isOwned) {
         ownedCount++;
         if (isSpecial) ownedSpecial++;
@@ -233,8 +237,8 @@ export default function TrackerApp() {
       if (s.ccVersion) {
         if (!albumVersion || s.ccVersion !== albumVersion) return false;
       }
-      if (filter === 'owned' && !owned[s.number]) return false;
-      if (filter === 'missing' && owned[s.number]) return false;
+      if (filter === 'owned' && !owned[s.id]) return false;
+      if (filter === 'missing' && owned[s.id]) return false;
       if (countryFilter !== 'all') {
         const sectionKey = STICKER_SECTIONS[s.number];
         if (sectionKey !== countryFilter) return false;
@@ -403,7 +407,7 @@ export default function TrackerApp() {
                     return true;
                   });
                   if (!items.length) return null;
-                  const ownedInSection = items.filter(s => owned[s.number]).length;
+                  const ownedInSection = items.filter(s => owned[s.id]).length;
                   const isActive = countryFilter === key;
                   return (
                     <button
@@ -505,7 +509,7 @@ export default function TrackerApp() {
         )}
 
         {grouped.map(([sectionKey, items]) => {
-          const ownedInSection = items.filter(s => owned[s.number]).length;
+          const ownedInSection = items.filter(s => owned[s.id]).length;
           const countryData = COUNTRY_BY_CODE[sectionKey];
           return (
             <section className="section" key={sectionKey} data-section={sectionKey}>
@@ -523,12 +527,13 @@ export default function TrackerApp() {
                 {items.map(s => (
                   <StickerCard
                     key={s.number}
+                    id={s.id}
                     number={s.number}
                     name={s.name}
                     country={s.country}
                     countryCode={s.countryCode}
                     sectionType={s.sectionType}
-                    owned={!!owned[s.number]}
+                    owned={!!owned[s.id]}
                     displayCode={s.displayCode}
                     photoUrl={s.imageUrl ?? null}
                     onToggle={handleToggle}
@@ -545,7 +550,7 @@ export default function TrackerApp() {
       {detailSticker && (
         <StickerDetailModal
           sticker={detailSticker}
-          owned={!!owned[detailSticker.number]}
+          owned={!!owned[detailSticker.id]}
           onClose={() => setDetailNumber(null)}
           onToggle={handleToggle}
         />

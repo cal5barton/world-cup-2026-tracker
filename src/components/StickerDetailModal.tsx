@@ -3,6 +3,7 @@ import { COUNTRY_BY_CODE, SECTION_LABELS, getStickerType } from '../data/album-s
 import FlagBlock from './FlagBlock';
 
 interface ModalSticker {
+  id: number;
   number: number;
   name: string;
   country: string;
@@ -17,7 +18,7 @@ interface StickerDetailModalProps {
   sticker: ModalSticker;
   owned: boolean;
   onClose: () => void;
-  onToggle: (number: number, owned: boolean) => void;
+  onToggle: (id: number, owned: boolean) => void;
 }
 
 export default function StickerDetailModal({ sticker, owned, onClose, onToggle }: StickerDetailModalProps) {
@@ -155,7 +156,7 @@ export default function StickerDetailModal({ sticker, owned, onClose, onToggle }
             <div className="modal__actions">
               <button
                 className={`btn ${owned ? '' : 'btn--primary'}`}
-                onClick={() => onToggle(sticker.number, !owned)}
+                onClick={() => onToggle(sticker.id, !owned)}
               >
                 {owned ? 'Remove from collection' : 'Mark as owned'}
               </button>

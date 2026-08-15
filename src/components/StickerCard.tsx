@@ -4,6 +4,7 @@ import type { Country } from '../data/album-structure';
 import FlagBlock from './FlagBlock';
 
 interface StickerCardProps {
+  id: number;
   number: number;
   name: string;
   country: string;
@@ -12,11 +13,12 @@ interface StickerCardProps {
   owned: boolean;
   displayCode: string;
   photoUrl?: string | null;
-  onToggle: (number: number, owned: boolean) => void;
+  onToggle: (id: number, owned: boolean) => void;
   onOpenDetail: (number: number) => void;
 }
 
 export default function StickerCard({
+  id,
   number,
   name,
   country,
@@ -56,7 +58,7 @@ export default function StickerCard({
       <button
         type="button"
         className="sticker__main"
-        onClick={() => onToggle(number, !owned)}
+        onClick={() => onToggle(id, !owned)}
         aria-pressed={owned}
         aria-label={`Sticker #${number} ${name} — ${owned ? 'owned' : 'missing'}, click to toggle`}
       >
