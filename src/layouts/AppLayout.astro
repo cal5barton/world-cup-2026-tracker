@@ -24,6 +24,7 @@ const { title } = Astro.props;
         <nav class="topbar__nav">
           <a href="/" id="nav-home">Overview</a>
           <a href="/tracker" id="nav-tracker" class="is-active">Tracker</a>
+          <a href="/trades" id="nav-trades">Trades</a>
         </nav>
       </div>
 
@@ -49,6 +50,7 @@ const { title } = Astro.props;
   const path = window.location.pathname;
   document.getElementById('nav-home')?.classList.toggle('is-active', path === '/');
   document.getElementById('nav-tracker')?.classList.toggle('is-active', path === '/tracker');
+  document.getElementById('nav-trades')?.classList.toggle('is-active', path === '/trades' || path.startsWith('/trade/'));
 
   // Show user chip
   supabase.auth.getSession().then(({ data: { session } }) => {

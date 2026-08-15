@@ -19,18 +19,25 @@ export const GET: APIRoute = async ({ request }) => {
   if (error) return errorResponse('Unable to load trades', 500);
 
   const origin = new URL(request.url).origin;
-  return jsonResponse({
-    data: (data ?? []).map((trade) => ({
+  const trades = await Promise.all((data ?? []).map(async (trade) => {
+    const { data: access } = await client.rpc('get_trade_access_by_token', {
+      p_share_token: trade.share_token,
+    });
+    const details = access?.[0];
+    const isCreator = trade.creator_id === user.id;
+    return {
       id: trade.id,
       status: trade.status,
       createdAt: trade.created_at,
       revokedAt: trade.revoked_at,
-      participantId: trade.creator_id === user.id ? trade.joined_user_id : trade.creator_id,
-      shareUrl: trade.creator_id === user.id
-        ? `${origin}/trade/${trade.share_token}`
-        : undefined,
-    })),
-  });
+      participantEmail: details
+        ? (isCreator ? details.joined_user_email : details.creator_email)
+        : null,
+      shareUrl: isCreator ? `${origin}/trade/${trade.share_token}` : undefined,
+    };
+  }));
+
+  return jsonResponse({ data: trades });
 };
 
 export const POST: APIRoute = async ({ request }) => {

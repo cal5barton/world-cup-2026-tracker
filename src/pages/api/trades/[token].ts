@@ -40,22 +40,6 @@ export const GET: APIRoute = async ({ request, params }) => {
   const { client, user, access } = result;
   const isApproved = access.joined_user_id !== null
     && (access.creator_id === user.id || access.request_status === 'approved');
-  if (!isApproved) {
-    return jsonResponse({
-      data: {
-        status: access.request_status ?? 'available',
-        tradeId: access.trade_id,
-        creatorEmail: access.creator_email,
-        requestId: access.request_id,
-      },
-    });
-  }
-
-  const { data: view, error } = await client.rpc('get_trade_view', {
-    p_trade_id: access.trade_id,
-  });
-  if (error) return errorResponse('Unable to load trade', 500);
-
   let requests: unknown[] = [];
   if (access.creator_id === user.id) {
     const { data: requestData, error: requestError } = await client.rpc('get_trade_join_requests', {
@@ -64,6 +48,23 @@ export const GET: APIRoute = async ({ request, params }) => {
     if (requestError) return errorResponse('Unable to load join requests', 500);
     requests = requestData ?? [];
   }
+
+  if (!isApproved) {
+    return jsonResponse({
+      data: {
+        status: access.request_status ?? 'available',
+        tradeId: access.trade_id,
+        creatorEmail: access.creator_email,
+        requestId: access.request_id,
+        requests,
+      },
+    });
+  }
+
+  const { data: view, error } = await client.rpc('get_trade_view', {
+    p_trade_id: access.trade_id,
+  });
+  if (error) return errorResponse('Unable to load trade', 500);
 
   return jsonResponse({
     data: {
