@@ -400,13 +400,54 @@ AS $$
     AND public.is_trade_creator(p_trade_id);
 $$;
 
+CREATE OR REPLACE FUNCTION public.leave_trade(p_trade_id UUID)
+RETURNS TEXT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  trade_creator UUID;
+  trade_joined_user UUID;
+BEGIN
+  SELECT creator_id, joined_user_id
+  INTO trade_creator, trade_joined_user
+  FROM public.trade_links
+  WHERE id = p_trade_id AND status = 'active'
+    AND (creator_id = auth.uid() OR joined_user_id = auth.uid());
+
+  IF trade_creator IS NULL THEN
+    RAISE EXCEPTION 'Trade is unavailable' USING ERRCODE = 'P0001';
+  END IF;
+
+  IF trade_creator = auth.uid() THEN
+    DELETE FROM public.trade_offers WHERE trade_id = p_trade_id;
+    UPDATE public.trade_links
+    SET status = 'revoked', revoked_at = NOW()
+    WHERE id = p_trade_id;
+    RETURN 'revoked';
+  END IF;
+
+  DELETE FROM public.trade_offers
+  WHERE trade_id = p_trade_id AND offering_user_id = auth.uid();
+  DELETE FROM public.trade_join_requests
+  WHERE trade_id = p_trade_id AND requester_id = auth.uid();
+  UPDATE public.trade_links
+  SET joined_user_id = NULL
+  WHERE id = p_trade_id AND joined_user_id = auth.uid();
+  RETURN 'left';
+END;
+$$;
+
 REVOKE ALL ON FUNCTION public.get_trade_access_by_token(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.request_trade_join_by_token(TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.decide_trade_join_request(UUID, TEXT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.get_trade_view(UUID) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.get_trade_join_requests(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.leave_trade(UUID) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.get_trade_access_by_token(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.request_trade_join_by_token(TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.decide_trade_join_request(UUID, TEXT) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_trade_view(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_trade_join_requests(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.leave_trade(UUID) TO authenticated;

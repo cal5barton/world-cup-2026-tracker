@@ -1365,6 +1365,7 @@ h1, h2, h3, h4, h5, h6 { margin: 0; }
 .trade-row, .trade-request { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--rule); }
 .trade-row strong, .trade-request strong { color: var(--ink); font-size: 14px; font-weight: 600; }
 .trade-row p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+.trade-row p.trade-row__pending { color: var(--warn); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.02em; }
 .trade-row__actions { display: flex; align-items: center; gap: 9px; }
 .trade-status { color: var(--muted); font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
 .trade-status--active { color: var(--ok); }

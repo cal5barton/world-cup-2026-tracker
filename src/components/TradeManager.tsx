@@ -8,6 +8,8 @@ type TradeSummary = {
   createdAt: string;
   revokedAt: string | null;
   participantEmail: string | null;
+  pendingRequestCount: number;
+  pendingRequesterEmails: string[];
   shareUrl?: string;
 };
 
@@ -32,6 +34,7 @@ type TradeSticker = {
 type TradeResponse = {
   status: 'available' | 'owner' | 'pending' | 'rejected' | 'approved';
   tradeId: string;
+  creatorId: string;
   creatorEmail: string;
   joinedUserEmail?: string | null;
   requestId?: string | null;
@@ -69,6 +72,7 @@ export default function TradeManager({ token }: Props) {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [createdLink, setCreatedLink] = useState('');
+  const [currentUserId, setCurrentUserId] = useState('');
 
   const loadTrades = useCallback(async () => {
     setLoading(true);
@@ -96,6 +100,12 @@ export default function TradeManager({ token }: Props) {
       setLoading(false);
     }
   }, [token]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUserId(session?.user.id ?? '');
+    });
+  }, []);
 
   useEffect(() => {
     if (token) void loadTrade();
@@ -131,6 +141,10 @@ export default function TradeManager({ token }: Props) {
         method: 'POST',
         body: JSON.stringify({ action, ...body }),
       });
+      if (action === 'leave' || action === 'revoke') {
+        window.location.href = '/trades';
+        return;
+      }
       await loadTrade();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unable to update trade');
@@ -191,6 +205,12 @@ export default function TradeManager({ token }: Props) {
               <div>
                 <strong>{item.participantEmail ?? 'Waiting for a partner'}</strong>
                 <p>Created {new Date(item.createdAt).toLocaleDateString()}</p>
+                {item.pendingRequestCount > 0 && (
+                  <p className="trade-row__pending">
+                    {item.pendingRequestCount} pending approval{item.pendingRequestCount === 1 ? '' : 's'}
+                    {' · '}{item.pendingRequesterEmails.join(', ')}
+                  </p>
+                )}
               </div>
               <div className="trade-row__actions">
                 <span className={`trade-status trade-status--${item.status}`}>{item.status}</span>
@@ -268,8 +288,12 @@ export default function TradeManager({ token }: Props) {
           <h1>Compare, then pack.</h1>
           <p className="trade-lede">{trade.joinedUserEmail ?? trade.creatorEmail} · {offeredCount} offers marked</p>
         </div>
-        <button className="trade-button trade-button--danger" disabled={busy} onClick={() => sendAction('revoke')}>
-          Revoke trade
+        <button
+          className="trade-button trade-button--danger"
+          disabled={busy}
+          onClick={() => sendAction(trade.creatorId === currentUserId ? 'revoke' : 'leave')}
+        >
+          {trade.creatorId === currentUserId ? 'Revoke trade' : 'Leave trade'}
         </button>
       </header>
 

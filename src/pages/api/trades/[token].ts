@@ -55,6 +55,7 @@ export const GET: APIRoute = async ({ request, params }) => {
         status: access.request_status ?? 'available',
         ...(access.creator_id === user.id ? { status: 'owner' } : {}),
         tradeId: access.trade_id,
+        creatorId: access.creator_id,
         creatorEmail: access.creator_email,
         requestId: access.request_id,
         requests,
@@ -71,6 +72,7 @@ export const GET: APIRoute = async ({ request, params }) => {
     data: {
       status: 'approved',
       tradeId: access.trade_id,
+      creatorId: access.creator_id,
       creatorEmail: access.creator_email,
       joinedUserEmail: access.joined_user_email,
       requests,
@@ -84,7 +86,7 @@ export const POST: APIRoute = async ({ request, params }) => {
   if (!token) return errorResponse('Trade not found', 404);
 
   let body: {
-    action?: 'join' | 'approve' | 'reject' | 'revoke' | 'offer';
+    action?: 'join' | 'approve' | 'reject' | 'revoke' | 'leave' | 'offer';
     requestId?: string;
     stickerId?: number;
     offered?: boolean;
@@ -129,6 +131,12 @@ export const POST: APIRoute = async ({ request, params }) => {
       .eq('creator_id', user.id);
     if (error) return errorResponse('Unable to revoke trade', 500);
     return jsonResponse({ data: { status: 'revoked' } });
+  }
+
+  if (body.action === 'leave') {
+    const { data, error } = await client.rpc('leave_trade', { p_trade_id: access.trade_id });
+    if (error) return errorResponse('Unable to leave trade', getDatabaseErrorStatus(error.message));
+    return jsonResponse({ data: { status: data } });
   }
 
   if (body.action === 'offer') {

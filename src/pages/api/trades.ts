@@ -14,6 +14,7 @@ export const GET: APIRoute = async ({ request }) => {
     .from('trade_links')
     .select('id, creator_id, joined_user_id, status, created_at, revoked_at, share_token')
     .or(`creator_id.eq.${user.id},joined_user_id.eq.${user.id}`)
+    .eq('status', 'active')
     .order('created_at', { ascending: false });
 
   if (error) return errorResponse('Unable to load trades', 500);
@@ -25,6 +26,16 @@ export const GET: APIRoute = async ({ request }) => {
     });
     const details = access?.[0];
     const isCreator = trade.creator_id === user.id;
+    let pendingRequests: Array<{ requester_email: string }> = [];
+    if (isCreator) {
+      const { data: requestData } = await client.rpc('get_trade_join_requests', {
+        p_trade_id: trade.id,
+      });
+      const requests = (requestData ?? []) as Array<{ status: string; requester_email: string }>;
+      pendingRequests = (requests ?? [])
+        .filter((request) => request.status === 'pending')
+        .map((request) => ({ requester_email: request.requester_email }));
+    }
     return {
       id: trade.id,
       status: trade.status,
@@ -33,7 +44,9 @@ export const GET: APIRoute = async ({ request }) => {
       participantEmail: details
         ? (isCreator ? details.joined_user_email : details.creator_email)
         : null,
-      shareUrl: isCreator ? `${origin}/trade/${trade.share_token}` : undefined,
+      pendingRequestCount: pendingRequests.length,
+      pendingRequesterEmails: pendingRequests.map((request) => request.requester_email),
+      shareUrl: `${origin}/trade/${trade.share_token}`,
     };
   }));
 
