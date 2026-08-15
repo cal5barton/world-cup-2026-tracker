@@ -208,14 +208,26 @@ import { COUNTRIES, FIFA_TO_ISO } from '../data/album-structure';
     const ctaOpen = document.getElementById('cta-open-album');
     if (ctaOpen) ctaOpen.style.display = 'inline-flex';
 
-    // Load collection count — direct Supabase call (no server proxy)
-    supabase
-      .from('user_stickers')
-      .select('sticker_id', { count: 'exact', head: true })
-      .eq('user_id', session.user.id)
-      .then(({ count }) => {
+    // CC sticker counts per version — mirrors TrackerApp's CC_COUNTS
+    const CC_COUNTS: Record<string, number> = { v1: 12, v2: 14, v3: 12, v4: 14 };
+
+    // Load collection count and album version — direct Supabase calls (no server proxy)
+    Promise.all([
+      supabase
+        .from('user_stickers')
+        .select('sticker_id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id),
+      supabase
+        .from('user_profiles')
+        .select('album_version')
+        .eq('user_id', session.user.id)
+        .maybeSingle(),
+    ])
+      .then(([{ count }, { data: profile }]) => {
         if (count != null) {
-          const pct = Math.round((count / 980) * 100);
+          const albumVersion = profile?.album_version as string | undefined;
+          const total = 980 + (albumVersion ? (CC_COUNTS[albumVersion] ?? 0) : 0);
+          const pct = Math.round((count / total) * 100);
           const el = document.getElementById('stat-progress');
           const lbl = document.getElementById('stat-progress-label');
           if (el) el.textContent = `${pct}%`;
